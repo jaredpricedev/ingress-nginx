@@ -7,7 +7,7 @@ controller="$registry/controller:$tag"
 
 docker run --rm "$controller" --version
 docker run --rm "$registry/kube-webhook-certgen:$tag" --help
-docker run --rm --user 0 --cap-add SYS_CHROOT --entrypoint /usr/bin/nginx \
+docker run --rm --user 0 --cap-add SYS_CHROOT --cap-add SYS_ADMIN --entrypoint /usr/bin/nginx \
   "$registry/controller-chroot:$tag" -v
 docker run --rm --entrypoint nginx "$controller" -v 2>&1 | grep -F 'nginx/1.30.6'
 

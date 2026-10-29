@@ -25,6 +25,7 @@ host, path = registry.split('/', 1)
 print(f'''# Generated from published images; linux/amd64 only.
 controller:
   image:
+    repository: ""
     registry: {host}
     image: {path}/controller
     tag: "{tag}"
@@ -33,12 +34,14 @@ controller:
   admissionWebhooks:
     patch:
       image:
+        repository: ""
         registry: {host}
         image: {path}/kube-webhook-certgen
         tag: "{tag}"
         digest: {certgen}
 defaultBackend:
   image:
+    repository: ""
     registry: {host}
     image: {path}/custom-error-pages
     tag: "{tag}"

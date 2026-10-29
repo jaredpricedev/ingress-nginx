@@ -126,7 +126,7 @@ get_src()
     echo "$hash  $f" | sha256sum -c -
   fi
   # TODO: Verify remaining third-party source archives too.
-  
+
   if [ ! -z "$dest" ]; then
         mkdir ${BUILD_PATH}/${dest}
         ARGS="-C ${BUILD_PATH}/${dest} --strip-components=1"

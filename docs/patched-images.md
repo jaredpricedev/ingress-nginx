@@ -89,6 +89,7 @@ rewrites, WebSockets, TCP/UDP, reloads, ModSecurity and OpenTelemetry.
   The NDK patch identifies its originating upstream PR in its source comments.
 
 Other vendored modules and Go dependencies are retained at their existing pins.
-Dependabot continues to propose Docker, Go and Actions updates. Security review
+The existing Dependabot configuration covers Docker, Go and Actions updates;
+version updates must be enabled in the fork settings to activate it. Security review
 and integration testing are needed for future controller and module findings;
 this fork is a bridge for existing deployments while planning migration.
