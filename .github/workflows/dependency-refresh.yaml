@@ -5,6 +5,7 @@ on:
     paths: [.github/workflows/dependency-refresh.yaml]
 permissions:
   contents: read
+  actions: read
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -13,16 +14,14 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
-      - id: day
-        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
-      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          path: /tmp/ingress-nginx-base-cache.tar
-          key: nginx-base-${{ runner.os }}-${{ runner.arch }}-${{ steps.day.outputs.day }}-${{ hashFiles('images/nginx/rootfs/**') }}
-          fail-on-cache-miss: true
+          name: docker.tar.gz
+          run-id: 40969001025
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Reproduce HTTP smoke checks with captured response
         run: |
-          docker load --input /tmp/ingress-nginx-base-cache.tar
+          gzip -dc docker.tar.gz | docker load
           mkdir -p dist/patched-images
           python3 - <<'PY'
           from pathlib import Path
@@ -31,7 +30,7 @@ jobs:
           source=source.replace('curl --fail --silent', 'curl --fail --silent --show-error')
           source=source.replace(' | grep -Fx', ' | tee dist/patched-images/last-response.txt | grep -Fx')
           source=source.replace('  docker logs "$name"', '  cat dist/patched-images/last-response.txt || true\n  docker inspect "$name" > dist/patched-images/smoke-state.json || true\n  docker logs "$name"')
-          Path('/tmp/base-smoke.sh').write_text('set -euxo pipefail\ncontroller=ingress-nginx/nginx:build-cache\n'+source)
+          Path('/tmp/base-smoke.sh').write_text('set -euxo pipefail\ncontroller=ingress-controller/controller:1.0.0-dev\n'+source)
           PY
           bash /tmp/base-smoke.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
