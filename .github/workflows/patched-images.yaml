@@ -57,6 +57,8 @@ jobs:
           export DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro -v $(go env GOCACHE):/go/src/k8s.io/ingress-nginx/.cache -v $(go env GOMODCACHE):/go/src/k8s.io/ingress-nginx/.modcache"
           build/run-in-docker.sh PKG=k8s.io/ingress-nginx GOFLAGS=-buildvcs=false go test -timeout 2m ./internal/ingress/controller/template
           make test
+          # Restore runner ownership after the root test container populated caches.
+          sudo chown -R "$(id -u):$(id -g)" "$(go env GOCACHE)" "$(go env GOMODCACHE)"
           (cd images/kube-webhook-certgen/rootfs && go test ./...)
       - name: Build five images and run smoke tests
         run: bash hack/build-patched-images.sh

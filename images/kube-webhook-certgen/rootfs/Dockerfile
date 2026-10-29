@@ -22,9 +22,9 @@ ARG TARGETARCH
 
 WORKDIR /workspace
 COPY . .
-RUN go mod tidy && CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -o kube-webhook-certgen main.go
+RUN go mod download && CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -a -o kube-webhook-certgen main.go
 
-FROM --platform=$BUILDPLATFORM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 ARG BUILDPLATFORM
 ARG TARGETARCH
 

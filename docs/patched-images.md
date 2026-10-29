@@ -22,7 +22,8 @@ are rejected. Locations, server names and auth proxy headers are escaped, and
 auth subrequests bypass custom error interception. Configurations that relied on
 previously accepted injection characters can behave differently or be rejected.
 
-The NGINX engine, Lua modules, Alpine packages and ModSecurity CRS change too.
+The NGINX engine, regex library (PCRE 2), Lua modules, Alpine packages and
+ModSecurity CRS change too. Custom regex patterns need compatibility testing.
 These need runtime testing, especially regex paths and rewrites, external auth,
 TLS/client certificates, WebSockets, TCP/UDP, ModSecurity, OpenTelemetry and custom
 snippets/templates. Identical chart resources do not guarantee identical request
@@ -62,6 +63,7 @@ e2e assertions are updated for quoted directives.
 | Go compiler | 1.24.3 | 1.26.10 |
 | Alpine | 3.21 | 3.23.7 plus current 3.23 packages |
 | NGINX | 1.25.5 with backports | 1.30.6 with rebased ingress/OpenResty patches |
+| Regex engine | PCRE 1 | PCRE 2 |
 | Lua NGINX / stream | 0.10.26 / pinned snapshot | 0.10.28 / 0.0.16 |
 | Lua resty core | 0.1.28 | 0.1.31 |
 | ModSecurity engine / connector / CRS | 3.0.14 / 1.0.3 / 4.10.0 | 3.0.17 / 1.0.4 / 4.25.2 LTS |

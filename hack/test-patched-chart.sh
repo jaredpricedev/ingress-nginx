@@ -117,6 +117,8 @@ helm upgrade ingress-nginx ./charts/ingress-nginx --namespace ingress-nginx --re
   --set controller.admissionWebhooks.patch.image.digest= --set controller.admissionWebhooks.patch.image.pullPolicy=Never
 kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=3m
 probe
+# New Ingress admission must work as well as updates after the UID validation fix.
+kubectl -n ingress-nginx create ingress compatibility-new --class=nginx --rule="new.test/healthz=compatibility-backend:8080"
 # Updating an existing Ingress also verifies the patched admission webhook works.
 kubectl -n ingress-nginx annotate ingress compatibility nginx.ingress.kubernetes.io/proxy-read-timeout=61
 probe
