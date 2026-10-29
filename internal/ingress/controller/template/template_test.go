@@ -53,6 +53,8 @@ func init() {
 	}
 }
 
+const quotedSlash = `"/"`
+
 var (
 	pathPrefix networking.PathType = networking.PathTypePrefix
 
@@ -71,7 +73,7 @@ var (
 		"when secure backend enabled": {
 			"/",
 			"/",
-			"\"/\"",
+			quotedSlash,
 			"proxy_pass https://upstream_balancer;",
 			"proxy_pass https://upstream_balancer;",
 			false,
@@ -82,7 +84,7 @@ var (
 		"when secure backend and dynamic config enabled": {
 			"/",
 			"/",
-			"\"/\"",
+			quotedSlash,
 			"proxy_pass https://upstream_balancer;",
 			"proxy_pass https://upstream_balancer;",
 			false,
@@ -93,7 +95,7 @@ var (
 		"when secure backend, stickiness and dynamic config enabled": {
 			"/",
 			"/",
-			"\"/\"",
+			quotedSlash,
 			"proxy_pass https://upstream_balancer;",
 			"proxy_pass https://upstream_balancer;",
 			true,
@@ -104,7 +106,7 @@ var (
 		"invalid redirect / to / with dynamic config enabled": {
 			"/",
 			"/",
-			"\"/\"",
+			quotedSlash,
 			"proxy_pass http://upstream_balancer;",
 			"proxy_pass $scheme://upstream_balancer;",
 			false,
@@ -115,7 +117,7 @@ var (
 		"invalid redirect / to /": {
 			"/",
 			"/",
-			"\"/\"",
+			quotedSlash,
 			"proxy_pass http://upstream_balancer;",
 			"proxy_pass $scheme://upstream_balancer;",
 			false,

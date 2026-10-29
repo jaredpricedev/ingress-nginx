@@ -16,10 +16,13 @@ limitations under the License.
 
 package authreq
 
-import "testing"
+import (
+	"net/http"
+	"testing"
+)
 
 func TestAuthMethodCannotContainDirectives(t *testing.T) {
-	for _, method := range []string{"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS", "TRACE"} {
+	for _, method := range []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodConnect, http.MethodOptions, http.MethodTrace} {
 		if !methodsRegex.MatchString(method) {
 			t.Errorf("valid HTTP method %q rejected", method)
 		}

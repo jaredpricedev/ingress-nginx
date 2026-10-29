@@ -244,6 +244,7 @@ func TestCheckIngress(t *testing.T) {
 	})
 
 	t.Run("when uids are valid", func(t *testing.T) {
+		nginx.command = testNginxTestCommand{t: t, expected: "_,example.com"}
 		validUIDs := []string{
 			"467a2005-a207-40f8-a15d-fd30b8ecfe94",
 			"aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",

@@ -14,7 +14,20 @@ cleanup() {
   kind delete cluster --name "$cluster"
 }
 trap cleanup EXIT
-kind create cluster --name "$cluster" --image="kindest/node:${K8S_VERSION:-v1.32.5}"
+# Use the kind release and immutable node image published together upstream.
+case "${K8S_VERSION:-v1.32.5}" in
+  v1.28.15)
+    kind_version=v0.25.0
+    node_image=kindest/node:v1.28.15@sha256:a7c05c7ae043a0b8c818f5a06188bc2c4098f6cb59ca7d1856df00375d839251
+    ;;
+  v1.32.5)
+    kind_version=v0.28.0
+    node_image=kindest/node:v1.32.5@sha256:36187f6c542fa9b78d2d499de4c857249c5a0ac8cc2241bef2ccd92729a7a259
+    ;;
+  *) echo 'This fixture supports Kubernetes v1.28.15 and v1.32.5.' >&2; exit 1 ;;
+esac
+go install "sigs.k8s.io/kind@$kind_version"
+kind create cluster --name "$cluster" --image="$node_image"
 kind load docker-image --name "$cluster" "$registry/controller:$tag" "$registry/controller-chroot:$tag" "$registry/kube-webhook-certgen:$tag" "$registry/custom-error-pages:$tag"
 helm upgrade --install ingress-nginx ./charts/ingress-nginx --namespace ingress-nginx --create-namespace --wait --timeout 5m
 cat > "$logs/routes.yaml" <<'YAML'

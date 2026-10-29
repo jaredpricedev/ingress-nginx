@@ -91,7 +91,7 @@ linters:
         - sloppyReassign
         - sloppyTypeAssert
         - sortSlice
-        - sprintfQuotedString
+        # NGINX escaping is deliberately narrower than Go %q (upstream security backport).
         - sqlQuery
         - syncMapLoadAndDelete
         - truncateCmp

@@ -28,7 +28,7 @@ FROM --platform=$BUILDPLATFORM gcr.io/distroless/static:nonroot
 ARG BUILDPLATFORM
 ARG TARGETARCH
 
-LABEL org.opencontainers.image.source=https://github.com/kubernetes/ingress-nginx
+LABEL org.opencontainers.image.source=https://github.com/jaredpricedev/ingress-nginx
 
 WORKDIR /
 COPY --from=builder /workspace/kube-webhook-certgen /kube-webhook-certgen
