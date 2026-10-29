@@ -19,6 +19,7 @@ package admission
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"net/http"
 	"os/exec"
@@ -43,6 +44,23 @@ var _ = framework.IngressNginxDescribeSerial("[Admission] admission controller",
 		f.NewSlowEchoDeployment()
 	})
 
+	ginkgo.It("should not allow REALLY large ingresses", func() {
+		// Make a post request with garbage data
+		// We have to directly POST because Kubernetes itself will reject the object before it getes to the validating webhook.
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true, //nolint:gosec // Ignore the gosec error in testing
+			},
+		}
+		client := &http.Client{Transport: transport}
+		body := strings.Repeat("b", 9*1024*1024) // 32MB body
+		resp, err := client.Post(fmt.Sprintf("https://nginx-ingress-controller-admission.%s.svc.cluster.local:443/networking/v1/ingresses", f.Namespace), "application/json", strings.NewReader(body))
+		assert.Nil(ginkgo.GinkgoT(), err, "creating HTTP request")
+		defer resp.Body.Close()
+
+		assert.Equal(ginkgo.GinkgoT(), http.StatusRequestEntityTooLarge, resp.StatusCode, "response status code")
+	})
+
 	ginkgo.It("should not allow overlaps of host and paths without canary annotations", func() {
 		host := admissionTestHost
 
@@ -52,7 +70,7 @@ var _ = framework.IngressNginxDescribeSerial("[Admission] admission controller",
 
 		f.WaitForNginxServer(host,
 			func(server string) bool {
-				return strings.Contains(server, fmt.Sprintf("server_name %v", host))
+				return strings.Contains(server, fmt.Sprintf(`server_name "%v"`, host))
 			})
 
 		secondIngress := framework.NewSingleIngress("second-ingress", "/", host, f.Namespace, framework.EchoService, 80, nil)
@@ -69,7 +87,7 @@ var _ = framework.IngressNginxDescribeSerial("[Admission] admission controller",
 
 		f.WaitForNginxServer(host,
 			func(server string) bool {
-				return strings.Contains(server, fmt.Sprintf("server_name %v", host))
+				return strings.Contains(server, fmt.Sprintf(`server_name "%v"`, host))
 			})
 
 		canaryAnnotations := map[string]string{
@@ -90,7 +108,7 @@ var _ = framework.IngressNginxDescribeSerial("[Admission] admission controller",
 
 		f.WaitForNginxServer(host,
 			func(server string) bool {
-				return strings.Contains(server, fmt.Sprintf("server_name %v", host))
+				return strings.Contains(server, fmt.Sprintf(`server_name "%v"`, host))
 			})
 
 		secondIngress := framework.NewSingleIngress("second-ingress", "/etc/nginx", host, f.Namespace, framework.EchoService, 80, nil)
