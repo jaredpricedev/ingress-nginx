@@ -38,11 +38,11 @@ export NGINX_SUBSTITUTIONS=e12e965ac1837ca709709f9a26f572a54d83430e
 # Check for recent changes: https://github.com/owasp-modsecurity/ModSecurity-nginx/compare/v1.0.4...master
 export MODSECURITY_VERSION=v1.0.4
 
-# Check for recent changes: https://github.com/owasp-modsecurity/ModSecurity/compare/v3.0.14...v3/master
-export MODSECURITY_LIB_VERSION=v3.0.14
+# Check for recent changes: https://github.com/owasp-modsecurity/ModSecurity/compare/v3.0.17...v3/master
+export MODSECURITY_LIB_VERSION=v3.0.17
 
-# Check for recent changes: https://github.com/coreruleset/coreruleset/compare/v4.22.0...main
-export OWASP_MODSECURITY_CRS_VERSION=v4.22.0
+# Check for recent changes: https://github.com/coreruleset/coreruleset/compare/v4.25.2...main
+export OWASP_MODSECURITY_CRS_VERSION=v4.25.2
 
 # Check for recent changes: https://github.com/openresty/lua-nginx-module/compare/v0.10.28...master
 export LUA_NGX_VERSION=v0.10.28
@@ -347,20 +347,7 @@ git submodule update
 
 sh build.sh
 
-# https://github.com/owasp-modsecurity/ModSecurity/issues/1909#issuecomment-465926762
-sed -i '115i LUA_CFLAGS="${LUA_CFLAGS} -DWITH_LUA_JIT_2_1"' build/lua.m4
-sed -i '117i AC_SUBST(LUA_CFLAGS)' build/lua.m4
-
-#
-# As of Alpine v3.23.0, building ModSecurity fails with:
-#
-# headers/modsecurity/collection/collection.h:x:x: error: 'int32_t' has not been declared
-# headers/modsecurity/collection/collection.h:x:x: note: 'int32_t' is defined in header '<cstdint>'; this is probably fixable by adding '#include <cstdint>'
-#
-# Sadly this has not been fixed upstream, yet, so we manually patch it here.
-#
-sed -i '24i #include <cstdint>' headers/modsecurity/collection/collection.h
-
+# ModSecurity 3.0.17 includes LuaJIT detection and the cstdint build fix.
 ./configure \
   --disable-doxygen-doc \
   --disable-doxygen-html \

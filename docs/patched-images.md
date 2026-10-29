@@ -64,16 +64,25 @@ e2e assertions are updated for quoted directives.
 | NGINX | 1.25.5 with backports | 1.30.6 with rebased ingress/OpenResty patches |
 | Lua NGINX / stream | 0.10.26 / pinned snapshot | 0.10.28 / 0.0.16 |
 | Lua resty core | 0.1.28 | 0.1.31 |
-| ModSecurity connector / CRS | 1.0.3 / 4.10.0 | 1.0.4 / 4.22.0 |
+| ModSecurity engine / connector / CRS | 3.0.14 / 1.0.3 / 4.10.0 | 3.0.17 / 1.0.4 / 4.25.2 LTS |
 | Helper runtime | implicit Distroless Debian version | explicit Debian 13 |
 
-The NGINX tarball SHA256 is verified. Its 34 ingress/OpenResty patches apply
+The NGINX tarball SHA256 is verified. Its 33 ingress/OpenResty patches apply
 with `--fuzz=0`; the obsolete CVE-2025-23419 patch is already integrated in
 NGINX 1.30.6. Additional NDK/set-misc patches retain variable-based URI escaping
-after NGINX's rewrite-engine fixes. Module versions are pinned in `build.sh`;
+after NGINX's rewrite-engine fixes. The later upstream PROXY v2 encoding patch is
+excluded: it was absent from v1.12.3 and that code path is affected by
+OpenResty's GHSA-wx83-v28q-68gx. Original PROXY v1 encoding and incoming v1/v2
+decoding remain available. Module versions are pinned in `build.sh`;
 remaining third-party archive checksums still need enforcement. Go module pins
 start from v1.12.3 and are subject to the vulnerability scan gate; changing the
 compiler alone does not patch those dependencies.
+
+ModSecurity 3.0.17 includes the September 2026 parser, transformation, XML and
+response-inspection fixes. CRS 4.25.2 is the patched LTS line, including the
+October 2026 bypass fixes; newer RCE path inspection and JSON content-type
+handling can change existing WAF behavior. Review false positives and custom
+rule exclusions if ModSecurity is enabled.
 
 ## Build and review
 
@@ -127,6 +136,9 @@ unchanged; no candidate image is a deployment default.
 - [Upstream retirement](https://kubernetes.io/blog/2025/11/11/ingress-nginx-retirement/)
 - [Kubernetes security announcements](https://github.com/kubernetes/kubernetes/labels/official-cve-feed)
 - [NGINX releases](https://nginx.org/en/download.html) and [security advisories](https://nginx.org/en/security_advisories.html)
+- [ModSecurity 3.0.17 release](https://github.com/owasp-modsecurity/ModSecurity/releases/tag/v3.0.17)
+- [CRS 4.25.2 LTS security release](https://coreruleset.org/20261002/crs-versions-4.30.0-and-4.25.2-lts-released/)
+- [OpenResty PROXY v2 advisory](https://github.com/openresty/openresty/security/advisories/GHSA-wx83-v28q-68gx)
 - [Go release history](https://go.dev/doc/devel/release)
 - NGINX patch rebase from [baranchen at 7ed2b926](https://github.com/baranchen/ingress-nginx/tree/7ed2b9269945e1de1bc4d843f3d3aee8d7698de4/images/nginx/rootfs/patches), regenerated against official 1.30.6.
 - NDK/set-misc compatibility patches from [forkline at a6522126](https://github.com/forkline/ingress-nginx/tree/a652212694663c1095cd38c201ce8674d277d157/images/nginx/rootfs/patches).

@@ -53,7 +53,8 @@ jobs:
           # The suite needs envtest binaries, certificate directories and free
           # low ports from the upstream test runner. Use the patched toolchain
           # installed above rather than the toolchain frozen inside that image.
-          DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro" make test
+          mkdir -p "$(go env GOCACHE)" "$(go env GOMODCACHE)"
+          DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro -v $(go env GOCACHE):/go/src/k8s.io/ingress-nginx/.cache -v $(go env GOMODCACHE):/go/src/k8s.io/ingress-nginx/.modcache" make test
           (cd images/kube-webhook-certgen/rootfs && go test ./...)
       - name: Build five images and run smoke tests
         run: bash hack/build-patched-images.sh
