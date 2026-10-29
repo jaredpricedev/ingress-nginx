@@ -44,7 +44,10 @@ jobs:
         run: echo "PATCHED_TAG=v1.15.1-patch.20261029-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
       - name: Unit tests
         run: |
-          go test ./internal/... ./pkg/...
+          # The suite needs envtest binaries, certificate directories and free
+          # low ports from the upstream test runner. Use the patched toolchain
+          # installed above rather than the toolchain frozen inside that image.
+          DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro" make test
           (cd images/kube-webhook-certgen/rootfs && go test ./...)
       - name: Build five images and run smoke tests
         run: bash hack/build-patched-images.sh
