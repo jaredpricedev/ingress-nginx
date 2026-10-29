@@ -36,6 +36,9 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io/jaredpricedev/ingress-nginx
+      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
+      NGINX_BASE_CACHE_FILE: ${{ runner.temp }}/patched-nginx-base.tar
+      FRESH_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -60,17 +63,44 @@ jobs:
           # Restore runner ownership after the root test container populated caches.
           sudo chown -R "$(id -u):$(id -g)" "$(go env GOCACHE)" "$(go env GOMODCACHE)"
           (cd images/kube-webhook-certgen/rootfs && go test ./...)
+      - name: Select daily NGINX base cache
+        id: base-key
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: base-restore
+        if: env.FRESH_BASE != 'true'
+        with:
+          path: ${{ env.NGINX_BASE_CACHE_FILE }}
+          key: nginx-base-${{ runner.os }}-${{ runner.arch }}-${{ steps.base-key.outputs.day }}-${{ hashFiles('images/nginx/rootfs/**') }}
       - name: Build five images and run smoke tests
         run: bash hack/build-patched-images.sh
+      - name: Check whether the base cache is complete
+        if: always()
+        id: base-cache
+        run: |
+          if [[ -s "$NGINX_BASE_CACHE_FILE" ]]; then echo "exists=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        if: always() && env.FRESH_BASE != 'true' && steps.base-cache.outputs.exists == 'true' && steps.base-restore.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.NGINX_BASE_CACHE_FILE }}
+          key: nginx-base-${{ runner.os }}-${{ runner.arch }}-${{ steps.base-key.outputs.day }}-${{ hashFiles('images/nginx/rootfs/**') }}
       - name: Install Helm
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
         with:
           version: v3.22.1
+      - name: Upgrade the original chart on Kubernetes 1.30
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
+        env:
+          K8S_VERSION: v1.30.13
+        run: bash hack/test-patched-chart.sh
       - name: Upgrade the original chart on Kubernetes 1.28
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
         env:
           K8S_VERSION: v1.28.15
         run: bash hack/test-patched-chart.sh
       - name: Upgrade the original chart on Kubernetes 1.32
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
         env:
           K8S_VERSION: v1.32.5
         run: bash hack/test-patched-chart.sh
@@ -78,6 +108,7 @@ jobs:
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         if: always() && hashFiles('dist/patched-images/images.txt') != ''
         with:
+          cache-dir: ${{ env.TRIVY_CACHE_DIR }}
           version: v0.76.1
           image-ref: ${{ env.REGISTRY }}/controller:${{ env.PATCHED_TAG }}
           format: json

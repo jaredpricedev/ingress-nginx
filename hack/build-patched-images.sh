@@ -13,7 +13,21 @@ fi
 mkdir -p dist/patched-images
 base="$registry/nginx:$tag"
 
-docker build --pull --no-cache -t "$base" images/nginx/rootfs
+# CI may reuse today's base only for identical NGINX build inputs. Publication
+# always rebuilds it; local builds remain fresh unless a cache is explicitly set.
+cache_file=${NGINX_BASE_CACHE_FILE:-}
+cache_tag=ingress-nginx/nginx:build-cache
+if [[ -n "$cache_file" && -s "$cache_file" && ${FRESH_BASE:-false} != true ]]; then
+  docker load --input "$cache_file"
+  docker tag "$cache_tag" "$base"
+else
+  docker build --pull --no-cache -t "$base" images/nginx/rootfs
+  if [[ -n "$cache_file" ]]; then
+    docker tag "$base" "$cache_tag"
+    docker save --output "$cache_file.tmp" "$cache_tag"
+    mv "$cache_file.tmp" "$cache_file"
+  fi
+fi
 export PKG=k8s.io/ingress-nginx ARCH="$arch" GOOS=linux
 export COMMIT_SHA="$(git rev-parse HEAD)" REPO_INFO="https://github.com/jaredpricedev/ingress-nginx"
 export TAG="$tag"

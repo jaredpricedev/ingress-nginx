@@ -28,7 +28,7 @@ These need runtime testing, especially regex paths and rewrites, external auth,
 TLS/client certificates, WebSockets, TCP/UDP, ModSecurity, OpenTelemetry and custom
 snippets/templates. Identical chart resources do not guarantee identical request
 handling. Kubernetes 1.28 and 1.32 are the endpoints of the original support
-matrix; the workflow tests a chart upgrade on both, with the routing checks below.
+matrix; the workflow tests a chart upgrade on both and on 1.30, with the routing checks below.
 Your actual Kubernetes version and custom Helm values remain unverified.
 
 ## Security backports
@@ -95,7 +95,8 @@ The **Patched Images** workflow builds `nginx`, `controller`, `controller-chroot
 It checks that chart files match the exact baseline, runs Go tests, and exercises
 Lua, substitutions, URI escaping, chroot, certgen and backend health. It loads
 ModSecurity with the bundled CRS, allows a benign request and blocks a test rule. On disposable
-Kubernetes 1.28/1.32 clusters it installs the original chart, then upgrades only
+Kubernetes 1.28/1.30/1.32 clusters it installs the original chart with a ClusterIP
+controller Service for Kind, then upgrades only
 the images with `--reuse-values`, checking HTTP, TLS, regex rewrite routing and
 an admission update before/after the upgrade.
 
@@ -104,6 +105,12 @@ HIGH/CRITICAL findings fail the workflow. Source-built modules need separate
 advisory review; a clean scan alone cannot certify them. A failed build or scan
 means the candidate is not ready. These tests cover fixtures, not your cluster's
 custom values or every ingress-nginx feature.
+
+The same Kind fixture runs on a Docker-capable local machine or a GitHub
+Actions runner; it does not depend on iximiuz. It uses an isolated kubeconfig
+and a unique disposable cluster, preserving existing contexts. CI keeps logs
+for each Kubernetes version separately. Its NGINX base cache is limited to the
+same UTC day and exact source-context hash; publication always builds fresh.
 
 For a local build with Docker, Bash and the Go compiler in `GOLANG_VERSION`:
 

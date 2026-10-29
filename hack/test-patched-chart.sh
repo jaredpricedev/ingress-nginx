@@ -4,14 +4,17 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 registry=${REGISTRY:-ghcr.io/jaredpricedev/ingress-nginx}
 tag=${PATCHED_TAG:?PATCHED_TAG is required}
-cluster=ingress-compat
-logs=dist/patched-images/compatibility
+cluster="ingress-compat-${GITHUB_RUN_ID:-$$}-${RANDOM}"
+logs="dist/patched-images/compatibility/${K8S_VERSION:-v1.32.5}"
+kube_dir=$(mktemp -d)
+export KUBECONFIG="$kube_dir/config"
 mkdir -p "$logs"
 cleanup() {
   [[ -z ${forward_pid:-} ]] || kill "$forward_pid" 2>/dev/null || true
   kind export logs "$logs/kind" --name "$cluster" || true
   kubectl -n ingress-nginx logs -l app.kubernetes.io/component=controller --tail=500 > "$logs/controller.log" 2>&1 || true
   kind delete cluster --name "$cluster"
+  rm -rf "$kube_dir"
 }
 trap cleanup EXIT
 # Use the kind release and immutable node image published together upstream.
@@ -20,16 +23,20 @@ case "${K8S_VERSION:-v1.32.5}" in
     kind_version=v0.25.0
     node_image=kindest/node:v1.28.15@sha256:a7c05c7ae043a0b8c818f5a06188bc2c4098f6cb59ca7d1856df00375d839251
     ;;
+  v1.30.13)
+    kind_version=v0.28.0
+    node_image=kindest/node:v1.30.13@sha256:8673291894dc400e0fb4f57243f5fdc6e355ceaa765505e0e73941aa1b6e0b80
+    ;;
   v1.32.5)
     kind_version=v0.28.0
     node_image=kindest/node:v1.32.5@sha256:36187f6c542fa9b78d2d499de4c857249c5a0ac8cc2241bef2ccd92729a7a259
     ;;
-  *) echo 'This fixture supports Kubernetes v1.28.15 and v1.32.5.' >&2; exit 1 ;;
+  *) echo 'This fixture supports Kubernetes v1.28.15, v1.30.13 and v1.32.5.' >&2; exit 1 ;;
 esac
 go install "sigs.k8s.io/kind@$kind_version"
 kind create cluster --name "$cluster" --image="$node_image"
 kind load docker-image --name "$cluster" "$registry/controller:$tag" "$registry/controller-chroot:$tag" "$registry/kube-webhook-certgen:$tag" "$registry/custom-error-pages:$tag"
-helm upgrade --install ingress-nginx ./charts/ingress-nginx --namespace ingress-nginx --create-namespace --wait --timeout 5m
+helm upgrade --install ingress-nginx ./charts/ingress-nginx --namespace ingress-nginx --create-namespace --set controller.service.type=ClusterIP --wait --timeout 5m
 cat > "$logs/routes.yaml" <<'YAML'
 apiVersion: v1
 kind: Service

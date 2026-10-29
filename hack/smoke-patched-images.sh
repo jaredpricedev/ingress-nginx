@@ -5,7 +5,7 @@ registry=${REGISTRY:-ghcr.io/jaredpricedev/ingress-nginx}
 tag=${PATCHED_TAG:-v1.12.3-patch.20261029}
 controller="$registry/controller:$tag"
 
-docker run --rm "$controller" --version
+docker run --rm "$controller" /nginx-ingress-controller --version
 docker run --rm "$registry/kube-webhook-certgen:$tag" --help
 docker run --rm --user 0 --cap-add SYS_CHROOT --cap-add SYS_ADMIN --entrypoint /usr/bin/nginx \
   "$registry/controller-chroot:$tag" -v
