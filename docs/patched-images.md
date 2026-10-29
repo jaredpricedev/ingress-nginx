@@ -91,7 +91,10 @@ The bundled OpenTelemetry C++ 1.19.0 library also receives upstream commit
 `7184d1edde9d38de8d2558db18a18707f17ade8e` for CVE-2026-44967. The patch
 caps HTTP exporter responses at 4 MiB, checks multiplication overflow, and
 applies a combined header/body limit. It retains the pinned library API and
-rebuilds the NGINX tracing module against the patched library. Image scanners
+rebuilds the NGINX tracing module against the patched library. A build-time
+regression test uses the installed HTTP client against a local server, accepting
+small/under-limit responses and rejecting oversized or combined header/body
+responses. Image scanners
 may miss vulnerabilities in libraries built from source, so this fix is explicit.
 
 ModSecurity 3.0.17 includes the September 2026 parser, transformation, XML and

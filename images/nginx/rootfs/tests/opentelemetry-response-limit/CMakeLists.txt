@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.16)
+project(otel_response_limit_test LANGUAGES CXX)
+find_package(opentelemetry-cpp CONFIG REQUIRED)
+add_executable(response-limit-test response-limit-test.cc)
+target_compile_features(response-limit-test PRIVATE cxx_std_17)
+target_link_libraries(response-limit-test PRIVATE opentelemetry-cpp::http_client_curl)

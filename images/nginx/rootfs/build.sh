@@ -320,6 +320,12 @@ cmake -B build -G Ninja -Wno-dev \
       cmake --build build
       cmake --install build
 
+# Exercise the installed HTTP client with real local responses, including a
+# combined header/body overflow. An unpatched SDK must fail this regression.
+cmake -S /tests/opentelemetry-response-limit -B /tmp/otel-response-limit-test -G Ninja
+cmake --build /tmp/otel-response-limit-test
+timeout 30s /tmp/otel-response-limit-test/response-limit-test
+
 # Git tuning
 git config --global --add core.compression -1
 
