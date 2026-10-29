@@ -67,6 +67,7 @@ e2e assertions are updated for quoted directives.
 | Lua NGINX / stream | 0.10.26 / pinned snapshot | 0.10.28 / 0.0.16 |
 | Lua resty core | 0.1.28 | 0.1.31 |
 | ModSecurity engine / connector / CRS | 3.0.14 / 1.0.3 / 4.10.0 | 3.0.17 / 1.0.4 / 4.25.2 LTS |
+| OpenTelemetry C++ | 1.19.0 | 1.19.0 + CVE-2026-44967 response limit backport |
 | Helper runtime | implicit Distroless Debian version | explicit Debian 13 |
 
 The NGINX tarball SHA256 is verified. Its 33 ingress/OpenResty patches apply
@@ -85,6 +86,13 @@ Module files were resolved with the pinned Go toolchain and verified before
 rebuilding the images. The reflect2 dependency uses
 the same patched runtime compatibility pin (`35a7c28c31ee`) as the later
 upstream controller, in both the controller and certgen modules.
+
+The bundled OpenTelemetry C++ 1.19.0 library also receives upstream commit
+`7184d1edde9d38de8d2558db18a18707f17ade8e` for CVE-2026-44967. The patch
+caps HTTP exporter responses at 4 MiB, checks multiplication overflow, and
+applies a combined header/body limit. It retains the pinned library API and
+rebuilds the NGINX tracing module against the patched library. Image scanners
+may miss vulnerabilities in libraries built from source, so this fix is explicit.
 
 ModSecurity 3.0.17 includes the September 2026 parser, transformation, XML and
 response-inspection fixes. CRS 4.25.2 is the patched LTS line, including the
@@ -156,6 +164,7 @@ unchanged; no candidate image is a deployment default.
 - [ModSecurity 3.0.17 release](https://github.com/owasp-modsecurity/ModSecurity/releases/tag/v3.0.17)
 - [CRS 4.25.2 LTS security release](https://coreruleset.org/20261002/crs-versions-4.30.0-and-4.25.2-lts-released/)
 - [OpenResty PROXY v2 advisory](https://github.com/openresty/openresty/security/advisories/GHSA-wx83-v28q-68gx)
+- [OpenTelemetry C++ response-limit advisory](https://github.com/open-telemetry/opentelemetry-cpp/security/advisories/GHSA-5qhm-4rfp-qqvj)
 - [Go release history](https://go.dev/doc/devel/release)
 - [Go networking module 0.62.0](https://github.com/golang/net/tree/v0.62.0)
 - [OpenTelemetry Go 1.41.0](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.41.0)

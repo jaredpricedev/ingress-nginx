@@ -26,13 +26,15 @@ cleanup() {
 trap cleanup EXIT
 cat > "$config" <<'NGINX'
 load_module /etc/nginx/modules/ngx_http_modsecurity_module.so;
+load_module /etc/nginx/modules/otel_ngx_module.so;
 pid /tmp/nginx.pid;
-error_log /dev/stderr notice;
+error_log stderr notice;
 events { worker_connections 128; }
 http {
   access_log off;
   server {
     listen 18080;
+    opentelemetry off;
     set $source "hello world";
     set_escape_uri $escaped $source;
     location = /rewrite { return 200 "$escaped"; }
@@ -75,4 +77,4 @@ docker run -d --name "$backend" -p 127.0.0.1::8080 "$registry/custom-error-pages
 port=$(docker port "$backend" 8080/tcp | cut -d: -f2)
 curl --fail --silent --show-error --max-time 10 --retry 10 --retry-all-errors --retry-delay 1 \
   "http://127.0.0.1:$port/healthz"
-echo 'Image version, Lua, substitutions, NDK rewrite, ModSecurity/CRS, chroot, certgen and backend smoke checks passed.'
+echo 'Image version, Lua, substitutions, NDK rewrite, ModSecurity/CRS, tracing module load, chroot, certgen and backend smoke checks passed.'

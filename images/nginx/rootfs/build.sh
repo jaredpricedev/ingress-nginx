@@ -295,6 +295,10 @@ ln -s /usr/local/bin/luajit /usr/local/bin/lua
 ln -s "$LUAJIT_INC" /usr/local/include/lua
 
 cd "$BUILD_PATH/opentelemetry-cpp"
+# Keep the v1.19 API while bounding exporter responses (upstream CVE-2026-44967 fix).
+for library_patch in /patches-opentelemetry/*.patch; do
+  patch --batch --forward --fuzz=0 -p1 < "$library_patch"
+done
 export CXXFLAGS="-DBENCHMARK_HAS_NO_INLINE_ASSEMBLY"
 cmake -B build -G Ninja -Wno-dev \
         -DOTELCPP_PROTO_PATH="${BUILD_PATH}/opentelemetry-proto/" \
