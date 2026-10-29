@@ -20,10 +20,10 @@ jobs:
           go-version-file: GOLANG_VERSION
       - name: Resolve exact security updates in both modules
         run: |
-          go get golang.org/x/net@v0.60.0 go.opentelemetry.io/otel@v1.41.0 go.opentelemetry.io/otel/trace@v1.41.0
+          go get golang.org/x/net@v0.62.0 go.opentelemetry.io/otel@v1.41.0 go.opentelemetry.io/otel/trace@v1.41.0
           go mod tidy
           cd images/kube-webhook-certgen/rootfs
-          go get golang.org/x/net@v0.60.0
+          go get golang.org/x/net@v0.62.0
           go mod tidy
       - name: Validate module integrity and preserve dependency changes
         run: |
