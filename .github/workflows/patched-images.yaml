@@ -62,7 +62,9 @@ jobs:
           make test
           # Restore runner ownership after the root test container populated caches.
           sudo chown -R "$(id -u):$(id -g)" "$(go env GOCACHE)" "$(go env GOMODCACHE)"
-          (cd images/kube-webhook-certgen/rootfs && go test ./...)
+          go mod verify
+          (cd images/kube-webhook-certgen/rootfs && go mod download && go mod verify && go test ./...)
+          (cd images/custom-error-pages/rootfs && go mod download && go mod verify && go test ./...)
       - name: Select daily NGINX base cache
         id: base-key
         run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"

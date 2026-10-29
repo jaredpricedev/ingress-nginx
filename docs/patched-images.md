@@ -79,7 +79,8 @@ decoding remain available. Module versions are pinned in `build.sh`;
 remaining third-party archive checksums still need enforcement. Go module pins
 start from v1.12.3, with `golang.org/x/net` 0.62.0, `x/text` 0.43.0 and
 OpenTelemetry Go 1.41.0 security updates plus their required dependencies.
-Both modules now require Go 1.26; their Kubernetes libraries remain at 0.33.1.
+The helper backend also updates `x/sys` to 0.49.0. All three modules now
+require Go 1.26; the controller/certgen Kubernetes libraries remain at 0.33.1.
 Module files were resolved with the pinned Go toolchain and verified before
 rebuilding the images. The reflect2 dependency uses
 the same patched runtime compatibility pin (`35a7c28c31ee`) as the later
@@ -118,8 +119,9 @@ same UTC day and exact source-context hash; publication always builds fresh.
 For a local build with Docker, Bash and the Go compiler in `GOLANG_VERSION`:
 
 ```sh
+export PATCHED_TAG=v1.12.3-patch.20261029
 bash hack/build-patched-images.sh
-bash hack/test-patched-chart.sh # also requires kind, kubectl, Helm and PATCHED_TAG
+K8S_VERSION=v1.30.13 bash hack/test-patched-chart.sh # also requires kubectl and Helm
 ```
 
 ## Publish and use with the existing chart
