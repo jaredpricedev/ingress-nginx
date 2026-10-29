@@ -77,8 +77,11 @@ excluded: it was absent from v1.12.3 and that code path is affected by
 OpenResty's GHSA-wx83-v28q-68gx. Original PROXY v1 encoding and incoming v1/v2
 decoding remain available. Module versions are pinned in `build.sh`;
 remaining third-party archive checksums still need enforcement. Go module pins
-start from v1.12.3 and are subject to the vulnerability scan gate; changing the
-compiler alone does not patch those dependencies. The reflect2 dependency uses
+start from v1.12.3, with `golang.org/x/net` 0.62.0, `x/text` 0.43.0 and
+OpenTelemetry Go 1.41.0 security updates plus their required dependencies.
+Both modules now require Go 1.26; their Kubernetes libraries remain at 0.33.1.
+Module files were resolved with the pinned Go toolchain and verified before
+rebuilding the images. The reflect2 dependency uses
 the same patched runtime compatibility pin (`35a7c28c31ee`) as the later
 upstream controller, in both the controller and certgen modules.
 
@@ -152,6 +155,8 @@ unchanged; no candidate image is a deployment default.
 - [CRS 4.25.2 LTS security release](https://coreruleset.org/20261002/crs-versions-4.30.0-and-4.25.2-lts-released/)
 - [OpenResty PROXY v2 advisory](https://github.com/openresty/openresty/security/advisories/GHSA-wx83-v28q-68gx)
 - [Go release history](https://go.dev/doc/devel/release)
+- [Go networking module 0.62.0](https://github.com/golang/net/tree/v0.62.0)
+- [OpenTelemetry Go 1.41.0](https://github.com/open-telemetry/opentelemetry-go/releases/tag/v1.41.0)
 - NGINX patch rebase from [baranchen at 7ed2b926](https://github.com/baranchen/ingress-nginx/tree/7ed2b9269945e1de1bc4d843f3d3aee8d7698de4/images/nginx/rootfs/patches), regenerated against official 1.30.6.
 - NDK/set-misc compatibility patches from [forkline at a6522126](https://github.com/forkline/ingress-nginx/tree/a652212694663c1095cd38c201ce8674d277d157/images/nginx/rootfs/patches).
 
