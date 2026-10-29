@@ -1,0 +1,11 @@
+--- a/src/os/unix/ngx_process_cycle.c
++++ b/src/os/unix/ngx_process_cycle.c
+@@ -1203,7 +1203,7 @@
+ 
+         if (ngx_terminate || ngx_quit) {
+             ngx_log_error(NGX_LOG_NOTICE, cycle->log, 0, "exiting");
+-            exit(0);
++            ngx_worker_process_exit(cycle);
+         }
+ 
+         if (ngx_reopen) {

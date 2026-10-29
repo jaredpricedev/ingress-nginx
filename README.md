@@ -1,3 +1,8 @@
+> **Experimental compatibility fork:** This branch targets **Helm chart 4.12.3 /
+> controller v1.12.3**, with updated image builds and selected controller security
+> backports. See [Patched images](docs/patched-images.md) for compatibility limits,
+> validation status and publication instructions. Upstream retirement still applies.
+
 # Ingress NGINX Controller
 
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5691/badge)](https://bestpractices.coreinfrastructure.org/projects/5691)

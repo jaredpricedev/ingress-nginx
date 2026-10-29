@@ -1,0 +1,13 @@
+--- a/src/core/ngx_log.h
++++ b/src/core/ngx_log.h
+@@ -76,7 +76,9 @@
+ };
+ 
+ 
+-#define NGX_MAX_ERROR_STR   2048
++#ifndef NGX_MAX_ERROR_STR
++#define NGX_MAX_ERROR_STR   4096
++#endif
+ 
+ 
+ /*********************************/

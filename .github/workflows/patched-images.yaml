@@ -1,0 +1,110 @@
+name: Patched Images
+
+on:
+  pull_request:
+    paths:
+      - 'GOLANG_VERSION'
+      - 'go.mod'
+      - 'go.sum'
+      - 'internal/**'
+      - 'test/**'
+      - 'charts/**'
+      - 'images/**'
+      - 'rootfs/**'
+      - 'hack/*patched*'
+      - '.github/workflows/patched-images.yaml'
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish scanned images to this fork's GHCR namespace
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: patched-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io/jaredpricedev/ingress-nginx
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version-file: GOLANG_VERSION
+      - name: Select unique candidate tag
+        run: echo "PATCHED_TAG=v1.12.3-patch.20261029-${GITHUB_SHA:0:12}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_ENV"
+      - name: Verify the chart stays at the exact 4.12.3 baseline
+        run: git diff --exit-code af6352cbe46e3c384c69c28257efa99535b97c80 HEAD -- charts/ingress-nginx
+      - name: Unit tests
+        run: |
+          # The suite needs envtest binaries, certificate directories and free
+          # low ports from the upstream test runner. Use the patched toolchain
+          # installed above rather than the toolchain frozen inside that image.
+          DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro" make test
+          (cd images/kube-webhook-certgen/rootfs && go test ./...)
+      - name: Build five images and run smoke tests
+        run: bash hack/build-patched-images.sh
+      - name: Install Helm
+        uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
+      - name: Upgrade the original chart on Kubernetes 1.28
+        env:
+          K8S_VERSION: v1.28.15
+        run: bash hack/test-patched-chart.sh
+      - name: Upgrade the original chart on Kubernetes 1.32
+        env:
+          K8S_VERSION: v1.32.5
+        run: bash hack/test-patched-chart.sh
+      - name: Install Trivy and report controller vulnerabilities
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
+        with:
+          version: v0.76.1
+          image-ref: ${{ env.REGISTRY }}/controller:${{ env.PATCHED_TAG }}
+          format: json
+          output: dist/patched-images/controller-initial-scan.json
+          exit-code: '0'
+      - name: Scan all candidates and generate SBOMs
+        if: always() && hashFiles('dist/patched-images/images.txt') != ''
+        run: |
+          failed=0
+          while IFS= read -r image; do
+            name=${image%:*}
+            name=${name##*/}
+            trivy image --scanners vuln --format json --output "dist/patched-images/$name.json" "$image" || failed=1
+            trivy image --format cyclonedx --output "dist/patched-images/$name.cdx.json" "$image" || failed=1
+            trivy image --scanners vuln --ignore-unfixed --severity HIGH,CRITICAL --exit-code 1 "$image" || failed=1
+          done < dist/patched-images/images.txt
+          exit "$failed"
+      - name: Login to GHCR for an explicitly requested publication
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/release-1.12.3' && github.repository == 'jaredpricedev/ingress-nginx'
+        uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish scanned images and generate digest-pinned Helm overrides
+        if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/release-1.12.3' && github.repository == 'jaredpricedev/ingress-nginx'
+        run: |
+          while IFS= read -r image; do docker push "$image"; done < dist/patched-images/images.txt
+          python3 hack/patched-image-values.py > dist/patched-images/values.yaml
+          cat dist/patched-images/values.yaml >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: patched-images-${{ github.run_id }}-${{ github.run_attempt }}
+          path: dist/patched-images/
+          if-no-files-found: ignore
+          retention-days: 30
