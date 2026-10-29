@@ -17,11 +17,14 @@ config=$(mktemp)
 name="patched-ingress-smoke-${RANDOM}"
 backend="patched-backend-smoke-${RANDOM}"
 cleanup() {
+  docker logs "$name" > dist/patched-images/smoke-nginx.log 2>&1 || true
+  docker logs "$backend" > dist/patched-images/smoke-backend.log 2>&1 || true
   docker rm -f "$name" "$backend" >/dev/null 2>&1 || true
   rm -f "$config"
 }
 trap cleanup EXIT
 cat > "$config" <<'NGINX'
+load_module /etc/nginx/modules/ngx_http_modsecurity_module.so;
 pid /tmp/nginx.pid;
 error_log /dev/stderr notice;
 events { worker_connections 128; }
@@ -38,6 +41,17 @@ http {
       subs_filter old-content new-content;
       content_by_lua_block { ngx.say("old-content") }
     }
+    location = /waf {
+      modsecurity on;
+      modsecurity_rules_file /etc/nginx/modsecurity/modsecurity.conf;
+      modsecurity_rules_file /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf;
+      modsecurity_rules '
+        SecRuleEngine On
+        SecAuditEngine Off
+        SecRule ARGS:block "@streq yes" "id:1000,phase:1,deny,status:403,nolog"
+      ';
+      content_by_lua_block { ngx.say("waf-ok") }
+    }
   }
 }
 NGINX
@@ -49,9 +63,13 @@ port=$(docker port "$name" 18080/tcp | cut -d: -f2)
 curl --fail --silent --retry 10 --retry-connrefused --retry-delay 1 \
   "http://127.0.0.1:$port/rewrite" | grep -Fx 'hello%20world'
 curl --fail --silent "http://127.0.0.1:$port/lua" | grep -Fx 'lua-ok'
+curl --fail --silent "http://127.0.0.1:$port/substitution" | grep -Fx 'new-content'
+curl --fail --silent "http://127.0.0.1:$port/waf" | grep -Fx 'waf-ok'
+curl --silent --output /dev/null --write-out '%{http_code}\n' \
+  "http://127.0.0.1:$port/waf?block=yes" | grep -Fx '403'
 
 docker run -d --name "$backend" -p 127.0.0.1::8080 "$registry/custom-error-pages:$tag"
 port=$(docker port "$backend" 8080/tcp | cut -d: -f2)
 curl --fail --silent --retry 10 --retry-connrefused --retry-delay 1 \
   "http://127.0.0.1:$port/healthz"
-echo 'Image version, Lua, NDK rewrite, chroot, certgen and backend smoke checks passed.'
+echo 'Image version, Lua, substitutions, NDK rewrite, ModSecurity/CRS, chroot, certgen and backend smoke checks passed.'

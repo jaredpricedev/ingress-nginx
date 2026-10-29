@@ -89,7 +89,8 @@ rule exclusions if ModSecurity is enabled.
 The **Patched Images** workflow builds `nginx`, `controller`, `controller-chroot`,
 `kube-webhook-certgen` and `custom-error-pages`, for native **linux/amd64**.
 It checks that chart files match the exact baseline, runs Go tests, and exercises
-Lua, substitutions, URI escaping, chroot, certgen and backend health. On disposable
+Lua, substitutions, URI escaping, chroot, certgen and backend health. It loads
+ModSecurity with the bundled CRS, allows a benign request and blocks a test rule. On disposable
 Kubernetes 1.28/1.32 clusters it installs the original chart, then upgrades only
 the images with `--reuse-values`, checking HTTP, TLS, regex rewrite routing and
 an admission update before/after the upgrade.
