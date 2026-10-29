@@ -1,40 +1,42 @@
-name: Resolve patched Go dependencies
+name: Diagnose NGINX base smoke checks
 on:
   push:
-    branches:
-      - diagnostics/dependency-refresh-1.12.3
-    paths:
-      - .github/workflows/dependency-refresh.yaml
+    branches: [diagnostics/dependency-refresh-1.12.3]
+    paths: [.github/workflows/dependency-refresh.yaml]
 permissions:
   contents: read
 jobs:
-  resolve:
+  smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           persist-credentials: false
-      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+      - id: day
+        run: echo "day=$(date -u +%Y%m%d)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
         with:
-          go-version-file: GOLANG_VERSION
-      - name: Resolve exact security updates in both modules
+          path: /tmp/ingress-nginx-base-cache.tar
+          key: nginx-base-${{ runner.os }}-${{ runner.arch }}-${{ steps.day.outputs.day }}-${{ hashFiles('images/nginx/rootfs/**') }}
+          fail-on-cache-miss: true
+      - name: Reproduce HTTP smoke checks with captured response
         run: |
-          go get golang.org/x/net@v0.62.0 go.opentelemetry.io/otel@v1.41.0 go.opentelemetry.io/otel/trace@v1.41.0
-          go mod tidy
-          cd images/kube-webhook-certgen/rootfs
-          go get golang.org/x/net@v0.62.0
-          go mod tidy
-      - name: Validate module integrity and preserve dependency changes
-        run: |
-          go mod verify
-          (cd images/kube-webhook-certgen/rootfs && go mod verify && go test ./...)
-          mkdir -p dist/dependency-refresh/images/kube-webhook-certgen/rootfs
-          cp go.mod go.sum dist/dependency-refresh/
-          cp images/kube-webhook-certgen/rootfs/go.mod images/kube-webhook-certgen/rootfs/go.sum dist/dependency-refresh/images/kube-webhook-certgen/rootfs/
-          git diff -- go.mod go.sum images/kube-webhook-certgen/rootfs/go.mod images/kube-webhook-certgen/rootfs/go.sum > dist/dependency-refresh/dependency.patch
+          docker load --input /tmp/ingress-nginx-base-cache.tar
+          mkdir -p dist/patched-images
+          python3 - <<'PY'
+          from pathlib import Path
+          source=Path('hack/smoke-patched-images.sh').read_text()
+          source=source[source.index('# Exercise Lua'):source.index('docker run -d --name "$backend"')]
+          source=source.replace('curl --fail --silent', 'curl --fail --silent --show-error')
+          source=source.replace(' | grep -Fx', ' | tee dist/patched-images/last-response.txt | grep -Fx')
+          source=source.replace('  docker logs "$name"', '  cat dist/patched-images/last-response.txt || true\n  docker inspect "$name" > dist/patched-images/smoke-state.json || true\n  docker logs "$name"')
+          Path('/tmp/base-smoke.sh').write_text('set -euxo pipefail\ncontroller=ingress-nginx/nginx:build-cache\n'+source)
+          PY
+          bash /tmp/base-smoke.sh
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        if: always()
         with:
-          name: dependency-refresh
-          path: dist/dependency-refresh/
+          name: base-smoke-diagnostics
+          path: dist/patched-images/
           retention-days: 7
