@@ -36,8 +36,8 @@ jobs:
       packages: write
     env:
       REGISTRY: ghcr.io/jaredpricedev/ingress-nginx
-      TRIVY_CACHE_DIR: ${{ runner.temp }}/trivy-cache
-      NGINX_BASE_CACHE_FILE: ${{ runner.temp }}/patched-nginx-base.tar
+      TRIVY_CACHE_DIR: /tmp/ingress-nginx-trivy-cache
+      NGINX_BASE_CACHE_FILE: /tmp/ingress-nginx-base-cache.tar
       FRESH_BASE: ${{ github.event_name == 'workflow_dispatch' && inputs.publish }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
