@@ -342,8 +342,7 @@ cd "$BUILD_PATH"
 git clone -n https://github.com/owasp-modsecurity/ModSecurity
 cd ModSecurity/
 git checkout $MODSECURITY_LIB_VERSION
-git submodule init
-git submodule update
+git submodule update --init --recursive
 
 sh build.sh
 

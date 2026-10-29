@@ -76,7 +76,9 @@ OpenResty's GHSA-wx83-v28q-68gx. Original PROXY v1 encoding and incoming v1/v2
 decoding remain available. Module versions are pinned in `build.sh`;
 remaining third-party archive checksums still need enforcement. Go module pins
 start from v1.12.3 and are subject to the vulnerability scan gate; changing the
-compiler alone does not patch those dependencies.
+compiler alone does not patch those dependencies. The reflect2 dependency uses
+the same patched runtime compatibility pin (`35a7c28c31ee`) as the later
+upstream controller, in both the controller and certgen modules.
 
 ModSecurity 3.0.17 includes the September 2026 parser, transformation, XML and
 response-inspection fixes. CRS 4.25.2 is the patched LTS line, including the
