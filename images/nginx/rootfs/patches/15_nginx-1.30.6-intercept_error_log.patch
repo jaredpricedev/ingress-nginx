@@ -1,0 +1,56 @@
+--- a/src/core/ngx_log.c
++++ b/src/core/ngx_log.c
+@@ -112,6 +112,8 @@
+     ngx_uint_t   wrote_stderr, debug_connection;
+     u_char       errstr[NGX_MAX_ERROR_STR];
+ 
++    ngx_log_intercept_pt    log_intercept = NULL;
++
+     last = errstr + NGX_MAX_ERROR_STR;
+ 
+     p = ngx_cpymem(errstr, ngx_cached_err_log_time.data,
+@@ -151,6 +153,16 @@
+ 
+     if (p > last - NGX_LINEFEED_SIZE) {
+         p = last - NGX_LINEFEED_SIZE;
++    }
++
++    if (ngx_cycle) {
++        log_intercept = ngx_cycle->intercept_error_log_handler;
++    }
++
++    if (log_intercept && !ngx_cycle->entered_logger) {
++        ngx_cycle->entered_logger = 1;
++        log_intercept(log, level, errstr, p - errstr);
++        ngx_cycle->entered_logger = 0;
+     }
+ 
+     ngx_linefeed(p);
+--- a/src/core/ngx_cycle.h
++++ b/src/core/ngx_cycle.h
+@@ -25,9 +25,14 @@
+ #define HAVE_PRIVILEGED_PROCESS_PATCH   1
+ 
+ 
++#define HAVE_INTERCEPT_ERROR_LOG_PATCH
++
++
+ typedef struct ngx_shm_zone_s  ngx_shm_zone_t;
+ 
+ typedef ngx_int_t (*ngx_shm_zone_init_pt) (ngx_shm_zone_t *zone, void *data);
++typedef ngx_int_t (*ngx_log_intercept_pt) (ngx_log_t *log, ngx_uint_t level,
++    u_char *buf, size_t len);
+ 
+ struct ngx_shm_zone_s {
+     void                     *data;
+@@ -86,6 +91,10 @@
+     ngx_str_t                 error_log;
+     ngx_str_t                 lock_file;
+     ngx_str_t                 hostname;
++
++    ngx_log_intercept_pt      intercept_error_log_handler;
++    void                     *intercept_error_log_data;
++    unsigned                  entered_logger;    /* :1 */
+ };
+ 
+ 

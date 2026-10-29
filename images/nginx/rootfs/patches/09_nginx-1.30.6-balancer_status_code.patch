@@ -1,0 +1,62 @@
+--- a/src/stream/ngx_stream_proxy_module.c
++++ b/src/stream/ngx_stream_proxy_module.c
+@@ -769,6 +769,11 @@
+         return;
+     }
+ 
++    if (rc >= NGX_STREAM_SPECIAL_RESPONSE) {
++        ngx_stream_proxy_finalize(s, rc);
++        return;
++    }
++
+     u->state->peer = u->peer.name;
+ 
+ #if (NGX_STREAM_UPSTREAM_ZONE)
+--- a/src/stream/ngx_stream.h
++++ b/src/stream/ngx_stream.h
+@@ -27,6 +27,7 @@
+ 
+ 
+ #define NGX_STREAM_OK                        200
++#define NGX_STREAM_SPECIAL_RESPONSE          300
+ #define NGX_STREAM_BAD_REQUEST               400
+ #define NGX_STREAM_FORBIDDEN                 403
+ #define NGX_STREAM_INTERNAL_SERVER_ERROR     500
+--- a/src/stream/ngx_stream_upstream.h
++++ b/src/stream/ngx_stream_upstream.h
+@@ -162,4 +162,9 @@
+ extern ngx_module_t  ngx_stream_upstream_module;
+ 
+ 
++#ifndef HAVE_BALANCER_STATUS_CODE_PATCH
++#define HAVE_BALANCER_STATUS_CODE_PATCH
++#endif
++
++
+ #endif /* _NGX_STREAM_UPSTREAM_H_INCLUDED_ */
+--- a/src/http/ngx_http_upstream.h
++++ b/src/http/ngx_http_upstream.h
+@@ -461,4 +461,9 @@
+ extern ngx_conf_bitmask_t  ngx_http_upstream_ignore_headers_masks[];
+ 
+ 
++#ifndef HAVE_BALANCER_STATUS_CODE_PATCH
++#define HAVE_BALANCER_STATUS_CODE_PATCH
++#endif
++
++
+ #endif /* _NGX_HTTP_UPSTREAM_H_INCLUDED_ */
+--- a/src/http/ngx_http_upstream.c
++++ b/src/http/ngx_http_upstream.c
+@@ -1594,6 +1594,11 @@
+         return;
+     }
+ 
++    if (rc >= NGX_HTTP_SPECIAL_RESPONSE) {
++        ngx_http_upstream_finalize_request(r, u, rc);
++        return;
++    }
++
+     u->state->peer = u->peer.name;
+ 
+ #if (NGX_HTTP_UPSTREAM_ZONE)

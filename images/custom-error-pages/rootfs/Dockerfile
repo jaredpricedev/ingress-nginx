@@ -23,14 +23,14 @@ WORKDIR /go/src/k8s.io/ingress-nginx/images/custom-error-pages
 
 COPY . .
 
-RUN go get . && \
+RUN go mod download && \
     CGO_ENABLED=0 go build -a -installsuffix cgo \
 	-ldflags "-s -w" \
 	-o nginx-errors .
 
 # Use distroless as minimal base image to package the binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 
 COPY --from=builder /go/src/k8s.io/ingress-nginx/images/custom-error-pages/nginx-errors /
 COPY --from=builder /go/src/k8s.io/ingress-nginx/images/custom-error-pages/www /www

@@ -1,0 +1,33 @@
+--- a/auto/cc/clang
++++ b/auto/cc/clang
+@@ -80,7 +80,7 @@
+ fi
+ 
+ # stop on warning
+-CFLAGS="$CFLAGS -Werror"
++#CFLAGS="$CFLAGS -Werror"
+ 
+ # debug
+ CFLAGS="$CFLAGS -g"
+--- a/auto/cc/icc
++++ b/auto/cc/icc
+@@ -103,7 +103,7 @@
+ esac
+ 
+ # stop on warning
+-CFLAGS="$CFLAGS -Werror"
++#CFLAGS="$CFLAGS -Werror"
+ 
+ # debug
+ CFLAGS="$CFLAGS -g"
+--- a/auto/cc/gcc
++++ b/auto/cc/gcc
+@@ -158,7 +158,7 @@
+ 
+ 
+ # stop on warning
+-CFLAGS="$CFLAGS -Werror"
++#CFLAGS="$CFLAGS -Werror"
+ 
+ # debug
+ CFLAGS="$CFLAGS -g"

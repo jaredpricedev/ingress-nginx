@@ -1,3 +1,8 @@
+> **Experimental patched-image fork:** Updated NGINX, Go, Alpine and helper-image
+> build inputs, with a fork-owned build/scan workflow. See
+> [Patched image builds](docs/patched-images.md) for versions, validation and
+> digest-pinned deployment overrides. Upstream retirement still applies.
+
 # Ingress NGINX Retirement
 
 ## Retiring

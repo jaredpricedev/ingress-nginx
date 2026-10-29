@@ -1,0 +1,11 @@
+--- a/src/http/ngx_http_upstream.c
++++ b/src/http/ngx_http_upstream.c
+@@ -2409,7 +2409,7 @@
+ 
+ #endif
+ 
+-    if (u->header_sent && !u->conf->preserve_output) {
++    if (u->request_body_sent && !u->conf->preserve_output) {
+         u->write_event_handler = ngx_http_upstream_dummy_handler;
+ 
+         (void) ngx_handle_write_event(c->write, 0);

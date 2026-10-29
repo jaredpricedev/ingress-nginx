@@ -1,9 +1,6 @@
-:100644 100644 c7463dcd 00000000 M	src/http/ngx_http_core_module.c
-diff --git a/src/http/ngx_http_core_module.c b/src/http/ngx_http_core_module.c
-index c7463dcd..e2e45931 100644
 --- a/src/http/ngx_http_core_module.c
 +++ b/src/http/ngx_http_core_module.c
-@@ -55,7 +55,6 @@ static char *ngx_http_core_listen(ngx_conf_t *cf, ngx_command_t *cmd,
+@@ -55,7 +55,6 @@
      void *conf);
  static char *ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd,
      void *conf);
@@ -11,10 +8,12 @@ index c7463dcd..e2e45931 100644
  static char *ngx_http_core_limit_except(ngx_conf_t *cf, ngx_command_t *cmd,
      void *conf);
  static char *ngx_http_core_set_aio(ngx_conf_t *cf, ngx_command_t *cmd,
-@@ -323,21 +322,6 @@ static ngx_command_t  ngx_http_core_commands[] = {
+@@ -328,21 +327,6 @@
+       ngx_conf_set_str_slot,
+       NGX_HTTP_LOC_CONF_OFFSET,
        offsetof(ngx_http_core_loc_conf_t, default_type),
-       NULL },
- 
+-      NULL },
+-
 -    { ngx_string("root"),
 -      NGX_HTTP_MAIN_CONF|NGX_HTTP_SRV_CONF|NGX_HTTP_LOC_CONF|NGX_HTTP_LIF_CONF
 -                        |NGX_CONF_TAKE1,
@@ -28,12 +27,10 @@ index c7463dcd..e2e45931 100644
 -      ngx_http_core_root,
 -      NGX_HTTP_LOC_CONF_OFFSET,
 -      0,
--      NULL },
--
+       NULL },
+ 
      { ngx_string("limit_except"),
-       NGX_HTTP_LOC_CONF|NGX_CONF_BLOCK|NGX_CONF_1MORE,
-       ngx_http_core_limit_except,
-@@ -4312,108 +4296,6 @@ ngx_http_core_server_name(ngx_conf_t *cf, ngx_command_t *cmd, void *conf)
+@@ -4576,108 +4560,6 @@
  }
  
  

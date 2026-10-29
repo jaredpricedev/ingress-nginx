@@ -25,7 +25,7 @@ RUN CGO_ENABLED=0 go build -a -installsuffix cgo \
 
 # Use distroless as minimal base image to package the binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 
 COPY --from=builder /go/src/k8s.io/ingress-nginx/images/fastcgi/fastcgi-helloserver /
 USER nonroot:nonroot

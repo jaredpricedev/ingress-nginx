@@ -18,7 +18,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-export NGINX_VERSION=1.27.1
+export NGINX_VERSION=1.30.6
 
 # Check for recent changes: https://github.com/vision5/ngx_devel_kit/compare/v0.3.3...master
 export NDK_VERSION=v0.3.3
@@ -105,7 +105,7 @@ export OPENTELEMETRY_CPP_VERSION=v1.19.0
 export OPENTELEMETRY_PROTO_VERSION=v1.5.0
 
 # Check for recent changes: https://github.com/nginx/njs/compare/0.9.0...master
-export NJS_VERSION=0.9.0
+export NJS_VERSION=1.0.2
 
 export BUILD_PATH=/tmp/build
 
@@ -121,9 +121,12 @@ get_src()
 
   echo "Downloading $url"
 
-  curl -sSL "$url" -o "$f"
-  # TODO: Reenable checksum verification but make it smarter
-  # echo "$hash  $f" | sha256sum -c - || exit 10
+  curl --fail --show-error --silent --location --retry 3 "$url" -o "$f"
+  if [[ "$url" == "https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz" ]]; then
+    echo "$hash  $f" | sha256sum -c -
+  fi
+  # TODO: Verify remaining third-party source archives too.
+  
   if [ ! -z "$dest" ]; then
         mkdir ${BUILD_PATH}/${dest}
         ARGS="-C ${BUILD_PATH}/${dest} --strip-components=1"
@@ -189,7 +192,7 @@ mkdir --verbose -p "$BUILD_PATH"
 cd "$BUILD_PATH"
 
 # download, verify and extract the source files
-get_src 66dc7081488811e9f925719e34d1b4504c2801c81dee2920e5452a86b11405ae \
+get_src 3cf46f5ed7504d460125866b7bea99fb357f31d887e2e63b35503310e9b8b6c8 \
         "https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz"
 
 get_src aa961eafb8317e0eb8da37eb6e2c9ff42267edd18b56947384e719b85188f58b \
@@ -274,7 +277,7 @@ get_src abc123 \
         "https://github.com/nginx/njs/archive/${NJS_VERSION}.tar.gz" "njs"
 
 # improve compilation times
-CORES=$(($(grep -c ^processor /proc/cpuinfo) - 1))
+CORES=${BUILD_JOBS:-2}
 
 export MAKEFLAGS=-j${CORES}
 export CTEST_BUILD_FLAGS=${MAKEFLAGS}
@@ -420,6 +423,14 @@ Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-980-CORRELATION.conf
 Include /etc/nginx/owasp-modsecurity-crs/rules/RESPONSE-999-EXCLUSION-RULES-AFTER-CRS.conf
 " > /etc/nginx/owasp-modsecurity-crs/nginx-modsecurity.conf
 
+# Keep NDK's private rewrite engine in sync with NGINX 1.30.4+.
+for module_patch in /patches-ndk/*.patch; do
+  patch --batch --forward --fuzz=0 -d "$BUILD_PATH/ngx_devel_kit" -p1 < "$module_patch"
+done
+for module_patch in /patches-set-misc/*.patch; do
+  patch --batch --forward --fuzz=0 -d "$BUILD_PATH/set-misc-nginx-module" -p1 < "$module_patch"
+done
+
 # build nginx
 cd "$BUILD_PATH/nginx-$NGINX_VERSION"
 
@@ -427,9 +438,9 @@ cd "$BUILD_PATH/nginx-$NGINX_VERSION"
 for PATCH in `ls /patches`;do
   echo "Patch: $PATCH"
   if [[ "$PATCH" == *.txt ]]; then
-    patch -p0 < /patches/$PATCH
+    patch --batch --forward --fuzz=0 -p0 < /patches/$PATCH
   else
-    patch -p1 < /patches/$PATCH
+    patch --batch --forward --fuzz=0 -p1 < /patches/$PATCH
   fi
 done
 
