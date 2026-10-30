@@ -121,6 +121,12 @@ advisory review; a clean scan alone cannot certify them. A failed build or scan
 means the candidate is not ready. These tests cover fixtures, not your cluster's
 custom values or every ingress-nginx feature.
 
+On this fork, automatic PR validation uses the focused **Patched Images**
+workflow. The inherited full **CI** matrix is restricted to the upstream
+repository for automatic events; it remains available through manual dispatch
+on the fork. This avoids repeatedly launching the full chart and regular/chroot
+matrices while a maintenance PR is edited.
+
 The same Kind fixture runs on a Docker-capable local machine or a GitHub
 Actions runner; it does not depend on iximiuz. It uses an isolated kubeconfig
 and a unique disposable cluster, preserving existing contexts. CI keeps logs

@@ -35,6 +35,10 @@ permissions:
 jobs:
 
   changes:
+    # The fork's Patched Images workflow owns automatic validation. Keep the
+    # upstream matrix available on demand without launching 15 Kind jobs for
+    # every edit to the maintenance PR.
+    if: github.repository == 'kubernetes/ingress-nginx' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read  # for dorny/paths-filter to fetch a list of changed files
       pull-requests: read  # for dorny/paths-filter to read pull requests
