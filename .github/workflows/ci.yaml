@@ -35,6 +35,10 @@ permissions:
 jobs:
 
   changes:
+    # The fork's Patched Images workflow owns automatic validation. Keep the
+    # upstream matrix available on demand without launching 15 Kind jobs for
+    # every edit to the maintenance PR.
+    if: github.repository == 'kubernetes/ingress-nginx' || github.event_name == 'workflow_dispatch'
     permissions:
       contents: read  # for dorny/paths-filter to fetch a list of changed files
       pull-requests: read  # for dorny/paths-filter to read pull requests
@@ -108,7 +112,7 @@ jobs:
           check-latest: true
 
       - name: Run test
-        run: make test
+        run: DOCKER_OPTS="-v $(go env GOROOT):/usr/local/go:ro" make test
 
         
   verify-docs:
@@ -224,6 +228,8 @@ jobs:
 
       - name: Set up Helm
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
+        with:
+          version: v3.22.1
 
       - name: Set up Helm Chart Testing
         uses: helm/chart-testing-action@0d28d3144d3a25ea2cc349d6e59901c4ff469b3b # v2.7.0
@@ -246,8 +252,10 @@ jobs:
           fetch-depth: 0
 
       - name: Lint chart
+        env:
+          TARGET_BRANCH: ${{ github.base_ref || github.ref_name }}
         run: |
-          ct lint --config .ct.yaml
+          ct lint --config .ct.yaml --target-branch "$TARGET_BRANCH"
           ah lint --path charts/ingress-nginx
 
       - name: Check docs

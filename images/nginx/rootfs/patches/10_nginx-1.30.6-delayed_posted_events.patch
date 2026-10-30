@@ -1,0 +1,92 @@
+--- a/src/event/ngx_event.c
++++ b/src/event/ngx_event.c
+@@ -197,6 +197,9 @@
+     ngx_uint_t  flags;
+     ngx_msec_t  timer, delta;
+ 
++    ngx_queue_t     *q;
++    ngx_event_t     *ev;
++
+     if (ngx_timer_resolution) {
+         timer = NGX_TIMER_INFINITE;
+         flags = 0;
+@@ -214,6 +217,13 @@
+         }
+ 
+ #endif
++    }
++
++    if (!ngx_queue_empty(&ngx_posted_delayed_events)) {
++        ngx_log_debug0(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
++                       "posted delayed event queue not empty"
++                       " making poll timeout 0");
++        timer = 0;
+     }
+ 
+     if (ngx_use_accept_mutex) {
+@@ -261,6 +271,35 @@
+     ngx_event_expire_timers();
+ 
+     ngx_event_process_posted(cycle, &ngx_posted_events);
++
++    while (!ngx_queue_empty(&ngx_posted_delayed_events)) {
++        q = ngx_queue_head(&ngx_posted_delayed_events);
++
++        ev = ngx_queue_data(q, ngx_event_t, queue);
++        if (ev->delayed) {
++            /* start of newly inserted nodes */
++            for (/* void */;
++                 q != ngx_queue_sentinel(&ngx_posted_delayed_events);
++                 q = ngx_queue_next(q))
++            {
++                ev = ngx_queue_data(q, ngx_event_t, queue);
++                ev->delayed = 0;
++
++                ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
++                               "skipping delayed posted event %p,"
++                               " till next iteration", ev);
++            }
++
++            break;
++        }
++
++        ngx_log_debug1(NGX_LOG_DEBUG_EVENT, cycle->log, 0,
++                       "delayed posted event %p", ev);
++
++        ngx_delete_posted_event(ev);
++
++        ev->handler(ev);
++    }
+ }
+ 
+ 
+@@ -671,6 +710,7 @@
+     ngx_queue_init(&ngx_posted_accept_events);
+     ngx_queue_init(&ngx_posted_next_events);
+     ngx_queue_init(&ngx_posted_events);
++    ngx_queue_init(&ngx_posted_delayed_events);
+ 
+     if (ngx_event_timer_init(cycle->log) == NGX_ERROR) {
+         return NGX_ERROR;
+--- a/src/event/ngx_event_posted.h
++++ b/src/event/ngx_event_posted.h
+@@ -45,6 +45,9 @@
+ extern ngx_queue_t  ngx_posted_accept_events;
+ extern ngx_queue_t  ngx_posted_next_events;
+ extern ngx_queue_t  ngx_posted_events;
++extern ngx_queue_t  ngx_posted_delayed_events;
++
++#define HAVE_POSTED_DELAYED_EVENTS_PATCH
+ 
+ 
+ #endif /* _NGX_EVENT_POSTED_H_INCLUDED_ */
+--- a/src/event/ngx_event_posted.c
++++ b/src/event/ngx_event_posted.c
+@@ -13,6 +13,7 @@
+ ngx_queue_t  ngx_posted_accept_events;
+ ngx_queue_t  ngx_posted_next_events;
+ ngx_queue_t  ngx_posted_events;
++ngx_queue_t  ngx_posted_delayed_events;
+ 
+ 
+ void

@@ -18,6 +18,7 @@ package controller
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -310,6 +311,9 @@ func (n *NGINXController) CheckWarning(ing *networking.Ingress) ([]string, error
 	return warnings, nil
 }
 
+// Match Kubernetes validate.UUID: normalized lowercase RFC 4122 form.
+var ingressUIDRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
 // CheckIngress returns an error in case the provided ingress, when added
 // to the current configuration, generates an invalid configuration
 func (n *NGINXController) CheckIngress(ing *networking.Ingress) error {
@@ -348,6 +352,12 @@ func (n *NGINXController) CheckIngress(ing *networking.Ingress) error {
 	startRender := time.Now().UnixNano() / 1000000
 	cfg := n.store.GetBackendConfiguration()
 	cfg.Resolver = n.resolver
+
+	// Validate UID
+	// The only argument that matters is ing.UID.
+	if !ingressUIDRegex.MatchString(string(ing.UID)) {
+		return fmt.Errorf("ingress has invalid UID: %q", ing.UID)
+	}
 
 	// Adds the pathType Validation
 	if cfg.StrictValidatePathType {

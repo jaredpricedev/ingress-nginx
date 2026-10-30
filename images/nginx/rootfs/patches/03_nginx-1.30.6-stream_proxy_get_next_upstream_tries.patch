@@ -1,0 +1,27 @@
+--- a/src/stream/ngx_stream_proxy_module.c
++++ b/src/stream/ngx_stream_proxy_module.c
+@@ -2681,3 +2681,14 @@
+ 
+     return NGX_CONF_OK;
+ }
++
++
++ngx_uint_t
++ngx_stream_proxy_get_next_upstream_tries(ngx_stream_session_t *s)
++{
++    ngx_stream_proxy_srv_conf_t      *pscf;
++
++    pscf = ngx_stream_get_module_srv_conf(s, ngx_stream_proxy_module);
++
++    return pscf->next_upstream_tries;
++}
+--- a/src/stream/ngx_stream.h
++++ b/src/stream/ngx_stream.h
+@@ -381,4 +381,7 @@
+ extern ngx_stream_filter_pt  ngx_stream_top_filter;
+ 
+ 
++#define HAS_NGX_STREAM_PROXY_GET_NEXT_UPSTREAM_TRIES_PATCH 1
++
++
+ #endif /* _NGX_STREAM_H_INCLUDED_ */

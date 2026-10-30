@@ -1,0 +1,49 @@
+--- a/src/stream/ngx_stream_upstream_round_robin.h
++++ b/src/stream/ngx_stream_upstream_round_robin.h
+@@ -228,5 +228,15 @@
+ void ngx_stream_upstream_free_round_robin_peer(ngx_peer_connection_t *pc,
+     void *data, ngx_uint_t state);
+ 
++#if (NGX_STREAM_SSL)
++ngx_int_t ngx_stream_upstream_set_round_robin_peer_session(
++    ngx_peer_connection_t *pc, void *data);
++void ngx_stream_upstream_save_round_robin_peer_session(
++    ngx_peer_connection_t *pc, void *data);
++#endif
++
++
++#define HAVE_NGX_STREAM_BALANCER_EXPORT_PATCH 1
++
+ 
+ #endif /* _NGX_STREAM_UPSTREAM_ROUND_ROBIN_H_INCLUDED_ */
+--- a/src/stream/ngx_stream_upstream_round_robin.c
++++ b/src/stream/ngx_stream_upstream_round_robin.c
+@@ -21,10 +21,6 @@
+ 
+ #if (NGX_STREAM_SSL)
+ 
+-static ngx_int_t ngx_stream_upstream_set_round_robin_peer_session(
+-    ngx_peer_connection_t *pc, void *data);
+-static void ngx_stream_upstream_save_round_robin_peer_session(
+-    ngx_peer_connection_t *pc, void *data);
+ static ngx_int_t ngx_stream_upstream_empty_set_session(
+     ngx_peer_connection_t *pc, void *data);
+ static void ngx_stream_upstream_empty_save_session(ngx_peer_connection_t *pc,
+@@ -898,7 +894,7 @@
+ 
+ #if (NGX_STREAM_SSL)
+ 
+-static ngx_int_t
++ngx_int_t
+ ngx_stream_upstream_set_round_robin_peer_session(ngx_peer_connection_t *pc,
+     void *data)
+ {
+@@ -960,7 +956,7 @@
+ }
+ 
+ 
+-static void
++void
+ ngx_stream_upstream_save_round_robin_peer_session(ngx_peer_connection_t *pc,
+     void *data)
+ {

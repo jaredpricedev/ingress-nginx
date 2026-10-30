@@ -1,0 +1,11 @@
+--- a/src/os/unix/ngx_daemon.c
++++ b/src/os/unix/ngx_daemon.c
+@@ -23,6 +23,8 @@
+         break;
+ 
+     default:
++        /* just to make it ASAN or Valgrind clean */
++        ngx_destroy_pool(ngx_cycle->pool);
+         exit(0);
+     }
+ 
